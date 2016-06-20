@@ -1,9 +1,28 @@
-import org.scalajs.dom.{document, html, window, KeyboardEvent, CanvasRenderingContext2D => Context}
+import org.scalajs.dom.{document, window, KeyboardEvent, CanvasRenderingContext2D => Context}
+import org.scalajs.dom.html.Canvas
 import scala.math.{min, max}
 import scalajs.js.JSApp
 import collection.{mutable => m}
 import scala.util.Random
 
+
+object Racer extends JSApp with Keys {
+  val MillisecondsPerTick = 5
+
+  def main(): Unit = {
+    val canvas = document.getElementById("canvas").asInstanceOf[Canvas]
+    val screen = Screen(canvas.width, canvas.height)
+    val renderer = canvas.getContext("2d").asInstanceOf[Context]
+    var state: GameState = GameState.Splash
+    window.setInterval(
+      () => {
+        GameState.render(state, screen)(renderer)
+        state = GameState.step(state, keys)
+      },
+      MillisecondsPerTick
+    )
+  }
+}
 
 // converts from [-1, 1] x [-1, 1] to screen coordinates
 case class Screen(w: Int, h: Int) {
@@ -13,38 +32,53 @@ case class Screen(w: Int, h: Int) {
 
 sealed trait GameState
 object GameState {
-  case object Splash extends GameState
+  case object Splash extends GameState {
+    val text = Text(
+      """Racer
+        |
+        |Press SPACE to start.
+        |LEFT/RIGHT arrow keys to move.
+        |SPACE to pause.""".stripMargin,
+      x = -0.6,
+      y =  0.2,
+      color = "red"
+    )
+  }
   case class Playing(car: Car, road: Road, score: Int) extends GameState
   case class Paused(unpaused: Playing) extends GameState
-  case class GameOver(score: Int) extends GameState
+  object Paused {
+    val text = Text(
+      """PAUSED.
+        |Press SPACE to unpause.""".stripMargin,
+      x = -0.5,
+      y = 0.0,
+      color = "green"
+    )
+  }
+  case object GameOver extends GameState {
+    val text = Text(
+      s"""GAME OVER.
+         |Press SPACE to restart.""".stripMargin,
+      x = -0.5,
+      y = 0.0,
+      color = "red"
+    )
+  }
 
   def newGame: GameState = Playing(Car.start, Road.newRoad, 0)
 
   def render(state: GameState, screen: Screen)(implicit r: Context): Unit = state match {
     case Splash =>
-      r.fillStyle = "red"
-      val message =
-        "Cave Racer. " +
-            "Press SPACE to start. " +
-            "LEFT/RIGHT arrow keys to move. " +
-            "SPACE to pause."
-      r.fillText(message, 10, screen.h / 2)
+      Splash.text.render(screen)
     case Playing(car, road, score) =>
       r.clearRect(0, 0, screen.w, screen.h)
-      r.fillStyle = "white"
-      r.fillText("score: " + score, 10, 20)
+      Text(s"Score: $score", x = -0.95, y = 0.9, color = "white").render(screen)
       road.render(screen)
       car.render(screen)
-    case Paused(unpause) =>
-      r.fillStyle = "green"
-      r.fillText("PAUSED.\n" + "Press SPACE to unpause.", 10, screen.h / 2)
-    case GameOver(score) =>
-      r.fillStyle = "red"
-      val message =
-          "GAME OVER. " +
-              "Score: " + score + ". " +
-              "Press SPACE to restart."
-      r.fillText(message, 10, screen.h / 2)
+    case _: Paused =>
+      Paused.text.render(screen)
+    case GameOver =>
+      GameOver.text.render(screen)
   }
 
   def step(state: GameState, keys: m.Set[Int]): GameState = {
@@ -55,7 +89,7 @@ object GameState {
         if (car.leftBumper < roadSlice.leftWall
             || car.rightBumper > roadSlice.rightWall) {
           // went off the road
-          GameOver(score)
+          GameOver
         } else {
           // handle arrow key-presses
           if (keys(Space)) {
@@ -83,6 +117,28 @@ object GameState {
   }
 }
 
+
+case class Text(text: String,
+                x: Double,
+                y: Double,
+                color: String = "#000000",
+                font: String = "'Georgia'",
+                size: Int = 30,
+                rotation: Double = 0.0) {
+  def render(screen: Screen)(implicit r: Context) {
+    val lines = text.split("\n")
+    r.save()
+    r.font = size.toString + "px " + font
+    r.fillStyle = color
+    r.translate(screen.X(x), screen.Y(y))
+    r.rotate(rotation * Math.PI / 180)
+    for ((line, i) <- lines.zipWithIndex) {
+      r.fillText(line, 0, i * size)
+    }
+    r.restore()
+  }
+}
+
 case class Car(x: Double) {
   def leftBumper: Double = x - Car.Width / 2
   def rightBumper: Double = x + Car.Width / 2
@@ -91,16 +147,16 @@ case class Car(x: Double) {
   def updatedRight: Car = Car(x + Car.Agility)
 
   def render(screen: Screen)(implicit r: Context): Unit = {
-    val ScreenBottom = -0.99
+    val Bottom = -0.99
     r.fillStyle = Car.Color
     val left = screen.X(leftBumper)
     val leftQrtr = screen.X(x - Car.Width / 4)
     val right = screen.X(rightBumper)
     val rightQrtr = screen.X(x + Car.Width / 4)
     val width = right - left
-    val bottom = screen.Y(ScreenBottom)
-    val top = screen.Y(ScreenBottom + Car.Height)
-    val mid = screen.Y(ScreenBottom + Car.Height / 2)
+    val bottom = screen.Y(Bottom)
+    val top = screen.Y(Bottom + Car.Height)
+    val mid = screen.Y(Bottom + Car.Height / 2)
     val height = bottom - top
     r.fillRect(left, mid, width, height / 2.0)
     r.fillRect(leftQrtr, top, rightQrtr - leftQrtr, height)
@@ -158,23 +214,4 @@ object Keys {
   val Up = 38
   val Right = 39
   val Down = 40
-}
-
-object Racer extends JSApp with Keys {
-  val MillisecondsPerTick = 5
-
-  def main(): Unit = {
-    val canvas = document.getElementById("canvas").asInstanceOf[html.Canvas]
-    val screen = Screen(canvas.width, canvas.height)
-    val renderer = canvas.getContext("2d").asInstanceOf[Context]
-    renderer.font = "20px Georgia"
-    var state: GameState = GameState.Splash
-    window.setInterval(
-      () => {
-        GameState.render(state, screen)(renderer)
-        state = GameState.step(state, keys)
-      },
-      MillisecondsPerTick
-    )
-  }
 }

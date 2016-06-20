@@ -1,0 +1,15 @@
+html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    font-size: 15px;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
+}
+
+#canvas {
+    width: 710px;
+    height: 562px;
+    position: absolute;
+    background: #222;
+    overflow: hidden;
+}

@@ -1,5 +1,10 @@
+package org.samthomson.racer
+
+import org.samthomson.pointerevents.{PointerEvent, PointerEventTarget}
+import org.scalajs.dom.ext.Color
+import org.scalajs.dom.ext.KeyCode.{Left, Right, Space}
 import org.scalajs.dom.html.Canvas
-import org.scalajs.dom.{CanvasRenderingContext2D => Context, KeyboardEvent, MouseEvent, document, window}
+import org.scalajs.dom.{CanvasRenderingContext2D => Context, KeyboardEvent, document, window}
 
 import scala.collection.{mutable => m}
 import scala.math.{max, min}
@@ -7,7 +12,7 @@ import scala.scalajs.js.JSApp
 import scala.util.Random
 
 
-class Racer(val canvas: Canvas) extends Keys with Mouse {
+class Racer(val canvas: Canvas) extends Keys with Pointer {
   val screen = Screen(canvas.width, canvas.height)
   val r = canvas.getContext("2d").asInstanceOf[Context]
 
@@ -22,14 +27,13 @@ class Racer(val canvas: Canvas) extends Keys with Mouse {
   )
 
   def step(state: GameState): GameState = {
-    import Keys._
     state match {
       case state @ GameState.Playing(car, road, score) =>
         val roadSlice = road.xs.head
         if (car.leftBumper < roadSlice.leftWall
             || car.rightBumper > roadSlice.rightWall) {
           // went off the road
-          mouse = None
+          pointer = None
           GameState.GameOver(state)
         } else {
           // handle arrow key-presses
@@ -43,19 +47,19 @@ class Racer(val canvas: Canvas) extends Keys with Mouse {
               newCar = newCar.updated(_ - Car.Agility)
             if (keys(Right))
               newCar = newCar.updated(_ + Car.Agility)
-            mouse.foreach { case (mouseX, _) =>
+            pointer.foreach { case (mouseX, _) =>
               newCar = newCar.updated(carX => carX + (mouseX - carX) * 2 * Car.Agility)
             }
             GameState.Playing(newCar, road.forward, score + 1)
           }
         }
       case GameState.Paused(unpaused) =>
-        if (keys(Space) || mouse.isDefined) {
+        if (keys(Space) || pointer.isDefined) {
           keys -= Space
           unpaused
         } else state
       case _ =>  // Splash || GameOver
-        if (keys(Space) || mouse.isDefined) {
+        if (keys(Space) || pointer.isDefined) {
           keys -= Space
           GameState.newGame
         } else state
@@ -77,28 +81,21 @@ case class Screen(w: Int, h: Int) {
   def Y(y: Double): Double = h / 2.0 * (1.0 - y)
 }
 
-// keep track of mouse state
-trait Mouse {
+// keep track of pointer state
+trait Pointer {
   def canvas: Canvas
   def screen: Screen
-  var mouse: Option[(Double, Double)] = None
+  var pointer: Option[(Double, Double)] = None
   def userSpace(x: Double, y: Double): (Double, Double) = (2 * x / screen.w - 1, 2 * y / screen.h - 1)
-  canvas.onmousedown = (e: MouseEvent) => { mouse = Some(userSpace(e.clientX, e.clientY)) }
-  canvas.onmousemove = (e: MouseEvent) => { if (mouse.isDefined) mouse = Some(userSpace(e.clientX, e.clientY)) }
-  canvas.onmouseup = (e: MouseEvent) => { mouse = None }
+  canvas.onPointerDown { (e: PointerEvent) => pointer = Some(userSpace(e.clientX, e.clientY)) }
+  canvas.onPointerMove { (e: PointerEvent) => if (pointer.isDefined) pointer = Some(userSpace(e.clientX, e.clientY)) }
+  canvas.onPointerUp { (e: PointerEvent) => pointer = None }
 }
 // keep track of keyboard keys pressed
 trait Keys {
   lazy val keys = m.Set.empty[Int]
   window.onkeydown = (e: KeyboardEvent) => keys += e.keyCode
   window.onkeyup = (e: KeyboardEvent) => keys -= e.keyCode
-}
-object Keys {
-  val Space = 32
-  val Left = 37
-  val Up = 38
-  val Right = 39
-  val Down = 40
 }
 
 
@@ -115,7 +112,7 @@ object GameState {
         |Press SPACE to pause.""".stripMargin,
       x = -0.6,
       y =  0.4,
-      color = "red"
+      color = Color.Red
     )
   }
   case class Playing(car: Car, road: Road, score: Int) extends GameState
@@ -127,7 +124,7 @@ object GameState {
         |Press SPACE to unpause.""".stripMargin,
       x = -0.5,
       y = 0.2,
-      color = "green"
+      color = Color.Green
     )
   }
   case class GameOver(lastState: Playing) extends GameState
@@ -138,7 +135,7 @@ object GameState {
          |Press SPACE to restart.""".stripMargin,
       x = -0.5,
       y = 0.2,
-      color = "red"
+      color = Color.Red
     )
   }
 
@@ -150,7 +147,7 @@ object GameState {
       case Splash =>
         Splash.text.render(screen)
       case Playing(car, road, score) =>
-        Text(s"SCORE: $score", x = -0.95, y = 0.85, color = "green").render(screen)
+        Text(s"SCORE: $score", x = -0.95, y = 0.85, color = Color.Green).render(screen)
         road.render(screen)
         car.render(screen)
       case Paused(unpaused) =>
@@ -173,7 +170,7 @@ object GameState {
 case class Text(text: String,
                 x: Double,
                 y: Double,
-                color: String = "#000000",
+                color: Color = Color.White,
                 font: String = "'Georgia'",
                 size: Int = 30,
                 rotation: Double = 0.0) {
@@ -181,7 +178,7 @@ case class Text(text: String,
     r.save()
     val lines = text.split("\n")
     r.font = size.toString + "px " + font
-    r.fillStyle = color
+    r.fillStyle = color.toString
     r.translate(screen.X(x), screen.Y(y))
     r.rotate(rotation * Math.PI / 180)
     for ((line, i) <- lines.zipWithIndex) {

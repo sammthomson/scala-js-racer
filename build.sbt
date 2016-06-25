@@ -2,11 +2,16 @@ enablePlugins(ScalaJSPlugin)
 
 name := "scala-js-racer"
 
+organization := "org.samthomson"
+
 version := "1.0-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
+resolvers ++= Seq(
+  Resolver.bintrayRepo("sammthomson", "maven")
+)
+
 libraryDependencies ++= Seq(
-  "org.scala-js" %%% "scalajs-dom" % "0.9.0",
-  "com.lihaoyi" %%% "scalatags" % "0.5.5"
+  "org.samthomson" %%% "scalajs-pointer-events-polyfill" % "0.1"
 )

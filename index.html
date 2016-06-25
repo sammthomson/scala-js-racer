@@ -6,10 +6,11 @@
     <link rel="stylesheet" href="./static/styles.css" />
   </head>
   <body>
-    <canvas id="canvas" width="710" height="562"></canvas>
+    <canvas id="canvas" width="710" height="562" touch-action="none"></canvas>
   </body>
+  <script type="text/javascript" src="./target/scala-2.11/scala-js-racer-jsdeps.js"></script>
   <script type="text/javascript" src="./target/scala-2.11/scala-js-racer-opt.js"></script>
   <script type="text/javascript">
-    Racer().main();
+    org.samthomson.racer.Racer().main();
   </script>
 </html>

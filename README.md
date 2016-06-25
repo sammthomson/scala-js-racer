@@ -1,2 +1,3 @@
 # scala-js-racer
-in-browser "racing" game made with scala.js
+
+In-browser racing game made with Scala.js.

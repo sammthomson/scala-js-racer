@@ -1,6 +1,6 @@
 enablePlugins(ScalaJSPlugin)
 
-name := "scala-js-racer"
+name := "scalajs-racer"
 
 organization := "org.samthomson"
 

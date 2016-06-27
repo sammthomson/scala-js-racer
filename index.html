@@ -3,13 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <title>Racer</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./static/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
   </head>
   <body>
-    <canvas id="canvas" width="710" height="562" touch-action="none"></canvas>
+    <div id="canvas-div">
+      <canvas id="canvas" touch-action="none"></canvas>
+    </div>
+    <div id="source">
+      <a href="https://github.com/sammthomson/scalajs-racer">Source code</a>
+    </div>
   </body>
-  <script type="text/javascript" src="./scala-js-racer-jsdeps.min.js"></script>
-  <script type="text/javascript" src="./scala-js-racer-opt.js"></script>
+  <script type="text/javascript" src="./target/scala-2.11/scalajs-racer-jsdeps.js"></script>
+  <script type="text/javascript" src="./target/scala-2.11/scalajs-racer-opt.js"></script>
   <script type="text/javascript">
     org.samthomson.racer.Racer().main();
   </script>

@@ -1,15 +1,29 @@
 html, body {
     margin: 0;
+    width: 100%;
     height: 100%;
     overflow: hidden;
     font-size: 15px;
     font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, source-code-pro, monospace;
 }
 
-#canvas {
-    width: 710px;
-    height: 562px;
-    position: absolute;
+#canvas-div {
+    width: 100%;
     background: #222;
     overflow: hidden;
+    clear: both;
+}
+
+#canvas {
+    /* center in canvas-div */
+    margin: auto;
+    display: block;
+    /*don't scroll*/
+    overflow: hidden;
+}
+
+#source {
+    margin: 5px;
+    text-align: right;
+    clear: both;
 }
